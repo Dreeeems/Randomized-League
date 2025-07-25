@@ -16,6 +16,7 @@ interface Champion {
 }
 
 interface Item {
+  id: string;
   name: string;
   description: string;
   image: {
@@ -25,6 +26,9 @@ interface Item {
     total: number;
   };
   tags: string[];
+  consumed?: boolean;
+  depth?: number;
+  maps?: Record<string, boolean>;
 }
 
 interface Rune {
