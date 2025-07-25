@@ -1,4 +1,5 @@
 "use client";
+
 import { useState, useEffect } from "react";
 import { Loader2, Shuffle, Sword, Shield, Zap } from "lucide-react";
 import Image from "next/image";
@@ -41,15 +42,19 @@ interface RuneTree {
   }[];
 }
 
-export default function Home() {
-  const [champion, setChampion] = useState<Champion[]>([]);
-  const [items, setItems] = useState<Item[]>([]);
+export default function LoLRandomGenerator() {
+  const [champions, setChampions] = useState<Champion[]>([]);
+  const [legendaryItems, setLegendaryItems] = useState<Item[]>([]);
+  const [boots, setBoots] = useState<Item[]>([]);
   const [runeTrees, setRuneTrees] = useState<RuneTree[]>([]);
 
   const [selectedChampion, setSelectedChampion] = useState<Champion | null>(
     null
   );
-  const [selectedItems, setSelectedItems] = useState<Item[]>([]);
+  const [selectedLegendaryItems, setSelectedLegendaryItems] = useState<Item[]>(
+    []
+  );
+  const [selectedBoots, setSelectedBoots] = useState<Item | null>(null);
   const [selectedRunes, setSelectedRunes] = useState<Rune[]>([]);
 
   const [loading, setLoading] = useState(true);
@@ -68,7 +73,7 @@ export default function Home() {
       const versions = await response.json();
       return versions[0];
     } catch (error) {
-      console.error("Error fetching versions:", error);
+      console.error("Error fetching version:", error);
       return "13.24.1";
     }
   };
@@ -76,8 +81,8 @@ export default function Home() {
   const fetchGameData = async () => {
     try {
       setLoading(true);
+
       const latestVersion = await fetchLatestVersion();
-      console.log(latestVersion);
       setVersion(latestVersion);
 
       const championsResponse = await fetch(
@@ -85,19 +90,40 @@ export default function Home() {
       );
       const championsData = await championsResponse.json();
       const championsList = Object.values(championsData.data) as Champion[];
-      setChampion(championsList);
+      setChampions(championsList);
 
       const itemsResponse = await fetch(
         `https://ddragon.leagueoflegends.com/cdn/${latestVersion}/data/en_US/item.json`
       );
       const itemsData = await itemsResponse.json();
-      const itemsList = Object.entries(itemsData.data)
+      const allItems = Object.entries(itemsData.data)
         .map(([id, item]: [string, any]) => ({
           id,
           ...item,
         }))
-        .filter((item: any) => item.gold?.total > 0 && item.maps?.[11]); // Only items available on Summoner's Rift
-      setItems(itemsList);
+        .filter((item: any) => item.maps?.[11]);
+
+      const legendaryItemsList = allItems.filter((item: any) => {
+        return (
+          item.gold?.total >= 3000 &&
+          !item.consumed &&
+          !item.tags?.includes("Trinket") &&
+          !item.tags?.includes("Consumable") &&
+          !item.tags?.includes("Boots") &&
+          item.depth >= 3
+        );
+      });
+
+      const bootsList = allItems.filter((item: any) => {
+        return (
+          item.tags?.includes("Boots") &&
+          item.gold?.total > 300 &&
+          !item.consumed
+        );
+      });
+
+      setLegendaryItems(legendaryItemsList);
+      setBoots(bootsList);
 
       const runesResponse = await fetch(
         `https://ddragon.leagueoflegends.com/cdn/${latestVersion}/data/en_US/runesReforged.json`
@@ -105,7 +131,12 @@ export default function Home() {
       const runesData = await runesResponse.json();
       setRuneTrees(runesData);
 
-      generateRandomBuild(championsList, itemsList, runesData);
+      generateRandomBuild(
+        championsList,
+        legendaryItemsList,
+        bootsList,
+        runesData
+      );
     } catch (error) {
       console.error("Error fetching game data:", error);
     } finally {
@@ -114,8 +145,9 @@ export default function Home() {
   };
 
   const generateRandomBuild = (
-    champList = champion,
-    itemList = items,
+    champList = champions,
+    legendaryList = legendaryItems,
+    bootsList = boots,
     runeList = runeTrees
   ) => {
     setGenerating(true);
@@ -125,8 +157,14 @@ export default function Home() {
         champList[Math.floor(Math.random() * champList.length)];
       setSelectedChampion(randomChampion);
 
-      const shuffledItems = [...itemList].sort(() => 0.5 - Math.random());
-      setSelectedItems(shuffledItems.slice(0, 6));
+      const shuffledLegendaryItems = [...legendaryList].sort(
+        () => 0.5 - Math.random()
+      );
+      setSelectedLegendaryItems(shuffledLegendaryItems.slice(0, 5));
+
+      const randomBoots =
+        bootsList[Math.floor(Math.random() * bootsList.length)];
+      setSelectedBoots(randomBoots);
 
       const primaryTree = runeList[Math.floor(Math.random() * runeList.length)];
       let secondaryTree = runeList[Math.floor(Math.random() * runeList.length)];
@@ -150,7 +188,7 @@ export default function Home() {
         selectedRunesList.push(rune);
       }
 
-      const availableSecondarySlots = secondaryTree.slots.slice(1); // Skip keystone slot
+      const availableSecondarySlots = secondaryTree.slots.slice(1);
       for (let i = 0; i < Math.min(2, availableSecondarySlots.length); i++) {
         const rune =
           availableSecondarySlots[i].runes[
@@ -164,18 +202,17 @@ export default function Home() {
     }, 500);
   };
 
-  console.log(selectedChampion, selectedItems, selectedRunes);
-
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradiant-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center">
         <div className="text-center text-white">
           <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4" />
-          <p className="text-xl">Loading League Of Legends data...</p>
+          <p className="text-xl">Loading League of Legends data...</p>
         </div>
       </div>
     );
   }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 p-4">
       <div className="max-w-7xl mx-auto">
@@ -190,7 +227,7 @@ export default function Home() {
           <button
             onClick={() => generateRandomBuild()}
             disabled={generating}
-            className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold px-8 py-3 text-lg rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center gap-2 mx-auto hover:cursor-pointer"
+            className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 disabled:opacity-50 hover:cursor-pointer disabled:cursor-not-allowed text-white font-bold px-8 py-3 text-lg rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center gap-2 mx-auto"
           >
             {generating ? (
               <>
@@ -205,6 +242,7 @@ export default function Home() {
             )}
           </button>
         </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="bg-black/40 border border-blue-500/50 backdrop-blur-sm rounded-lg shadow-xl">
             <div className="p-6 text-center border-b border-blue-500/30">
@@ -248,7 +286,8 @@ export default function Home() {
               )}
             </div>
           </div>
-          <div className="bg-black/40  border border-green-500/50 backdrop-blur-sm rounded-lg shadow-xl">
+
+          <div className="bg-black/40 border border-green-500/50 backdrop-blur-sm rounded-lg shadow-xl">
             <div className="p-6 text-center border-b border-green-500/30">
               <h2 className="text-2xl text-white flex items-center justify-center gap-2 font-bold">
                 <Shield className="h-6 w-6 text-green-500" />
@@ -256,29 +295,65 @@ export default function Home() {
               </h2>
             </div>
             <div className="p-6">
-              {selectedItems.length > 0 ? (
-                <div className="grid grid-cols-3 gap-4">
-                  {selectedItems.map((item, index) => (
-                    <div key={index} className="text-center group relative">
-                      <div className="relative w-12 h-12 mx-auto mb-2">
-                        <Image
-                          src={`https://ddragon.leagueoflegends.com/cdn/${version}/img/item/${item.image.full}`}
-                          alt={item.name}
-                          fill
-                          className="rounded border border-green-500/5 group-hover:border-green-400 transition-colors shadow-md "
-                        />
-                      </div>
-                      <p
-                        className="text-xs  text-white truncate font-medium"
-                        title={item.name}
-                      >
-                        {item.name}
-                      </p>
-                      <p className="text-xs text-yellow-400 font-bold">
-                        {item.gold.total}g{" "}
-                      </p>
+              {selectedLegendaryItems.length > 0 || selectedBoots ? (
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-sm font-semibold text-green-300 mb-2">
+                      Legendary Items
+                    </h3>
+                    <div className="grid grid-cols-5 gap-2">
+                      {selectedLegendaryItems.map((item, index) => (
+                        <div key={index} className="text-center group relative">
+                          <div className="relative w-10 h-10 mx-auto mb-1">
+                            <Image
+                              src={`https://ddragon.leagueoflegends.com/cdn/${version}/img/item/${item.image.full}`}
+                              alt={item.name}
+                              fill
+                              className="rounded border border-green-500/50 group-hover:border-green-400 transition-colors shadow-md"
+                            />
+                          </div>
+                          <p
+                            className="text-xs text-white truncate font-medium"
+                            title={item.name}
+                          >
+                            {item.name.split(" ")[0]}
+                          </p>
+                          <p className="text-xs text-yellow-400 font-bold">
+                            {item.gold.total}g
+                          </p>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  </div>
+
+                  {selectedBoots && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-green-300 mb-2">
+                        Boots
+                      </h3>
+                      <div className="flex justify-center">
+                        <div className="text-center group relative">
+                          <div className="relative w-12 h-12 mx-auto mb-1">
+                            <Image
+                              src={`https://ddragon.leagueoflegends.com/cdn/${version}/img/item/${selectedBoots.image.full}`}
+                              alt={selectedBoots.name}
+                              fill
+                              className="rounded border-2 border-orange-500/70 group-hover:border-orange-400 transition-colors shadow-md"
+                            />
+                          </div>
+                          <p
+                            className="text-xs text-white truncate font-medium"
+                            title={selectedBoots.name}
+                          >
+                            {selectedBoots.name}
+                          </p>
+                          <p className="text-xs text-yellow-400 font-bold">
+                            {selectedBoots.gold.total}g
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="text-gray-400 text-center">
@@ -287,6 +362,73 @@ export default function Home() {
               )}
             </div>
           </div>
+
+          <div className="bg-black/40 border border-purple-500/50 backdrop-blur-sm rounded-lg shadow-xl">
+            <div className="p-6 text-center border-b border-purple-500/30">
+              <h2 className="text-2xl text-white flex items-center justify-center gap-2 font-bold">
+                <Zap className="h-6 w-6 text-purple-500" />
+                Runes
+              </h2>
+            </div>
+            <div className="p-6">
+              {selectedRunes.length > 0 ? (
+                <div className="space-y-3">
+                  {selectedRunes.map((rune, index) => (
+                    <div
+                      key={rune.id}
+                      className="flex items-center gap-3 p-3 rounded-lg bg-purple-900/30 border border-purple-700/30 hover:bg-purple-800/30 transition-colors"
+                    >
+                      <div className="relative w-8 h-8 flex-shrink-0">
+                        <Image
+                          src={`https://ddragon.leagueoflegends.com/cdn/img/${rune.icon}`}
+                          alt={rune.name}
+                          fill
+                          className="rounded shadow-sm"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="text-sm font-medium text-white truncate">
+                            {rune.name}
+                          </p>
+                          {index === 0 && (
+                            <span className="bg-yellow-600 text-white text-xs px-2 py-0.5 rounded-full font-bold">
+                              Keystone
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-purple-200 line-clamp-2 leading-relaxed">
+                          {rune.shortDesc.replace(/<[^>]*>/g, "")}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-gray-400 text-center">
+                  No runes selected
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="text-center mt-8 text-blue-200 text-sm">
+          <p className="mb-1 font-bold">
+            <a
+              href="https://github.com/Dreeeems/Randomized-League"
+              target="blank"
+            >
+              Made by Dreeeems
+            </a>
+          </p>
+          <p>
+            Data provided by Riot Games API • League of Legends Random Build
+            Generator
+          </p>
+          {version && (
+            <p className="mt-1 text-blue-300">Game Version: {version}</p>
+          )}
         </div>
       </div>
     </div>
