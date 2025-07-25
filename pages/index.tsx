@@ -165,4 +165,130 @@ export default function Home() {
   };
 
   console.log(selectedChampion, selectedItems, selectedRunes);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradiant-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center">
+        <div className="text-center text-white">
+          <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4" />
+          <p className="text-xl">Loading League Of Legends data...</p>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 p-4">
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl md:text-6xl font-bold text-white mb-4">
+            LoL Random Generator
+          </h1>
+          <p className="text-xl text-blue-200 mb-6">
+            Generate random champions, items, and runes for your next League of
+            Legends game!
+          </p>
+          <button
+            onClick={() => generateRandomBuild()}
+            disabled={generating}
+            className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold px-8 py-3 text-lg rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center gap-2 mx-auto hover:cursor-pointer"
+          >
+            {generating ? (
+              <>
+                <Loader2 className="h-5 w-5 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Shuffle className="h-5 w-5" />
+                Generate Random Build
+              </>
+            )}
+          </button>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="bg-black/40 border border-blue-500/50 backdrop-blur-sm rounded-lg shadow-xl">
+            <div className="p-6 text-center border-b border-blue-500/30">
+              <h2 className="text-2xl text-white flex items-center justify-center gap-2 font-bold">
+                <Sword className="h-6 w-6 text-yellow-500" />
+                Champion
+              </h2>
+            </div>
+            <div className="p-6 text-center">
+              {selectedChampion ? (
+                <div className="space-y-4">
+                  <div className="relative w-32 h-32 mx-auto">
+                    <Image
+                      src={`https://ddragon.leagueoflegends.com/cdn/${version}/img/champion/${selectedChampion.image.full}`}
+                      alt={selectedChampion.name}
+                      fill
+                      className="rounded-lg object-cover border-2 border-yellow-500 shadow-lg"
+                    />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-white">
+                      {selectedChampion.name}
+                    </h3>
+                    <p className="text-blue-200 text-sm italic">
+                      {selectedChampion.title}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    {selectedChampion.tags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="bg-blue-600/50 text-white text-xs px-2 py-1 rounded-full border border-blue-400/30"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-gray-400">No champion selected</div>
+              )}
+            </div>
+          </div>
+          <div className="bg-black/40  border border-green-500/50 backdrop-blur-sm rounded-lg shadow-xl">
+            <div className="p-6 text-center border-b border-green-500/30">
+              <h2 className="text-2xl text-white flex items-center justify-center gap-2 font-bold">
+                <Shield className="h-6 w-6 text-green-500" />
+                Items
+              </h2>
+            </div>
+            <div className="p-6">
+              {selectedItems.length > 0 ? (
+                <div className="grid grid-cols-3 gap-4">
+                  {selectedItems.map((item, index) => (
+                    <div key={index} className="text-center group relative">
+                      <div className="relative w-12 h-12 mx-auto mb-2">
+                        <Image
+                          src={`https://ddragon.leagueoflegends.com/cdn/${version}/img/item/${item.image.full}`}
+                          alt={item.name}
+                          fill
+                          className="rounded border border-green-500/5 group-hover:border-green-400 transition-colors shadow-md "
+                        />
+                      </div>
+                      <p
+                        className="text-xs  text-white truncate font-medium"
+                        title={item.name}
+                      >
+                        {item.name}
+                      </p>
+                      <p className="text-xs text-yellow-400 font-bold">
+                        {item.gold.total}g{" "}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-gray-400 text-center">
+                  No items selected
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
