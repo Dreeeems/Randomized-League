@@ -99,18 +99,11 @@ export default function LoLRandomGenerator() {
       const itemsData = await itemsResponse.json();
 
       const allItems = Object.entries(itemsData.data)
-        .map(
-          ([id, item]: [
-            string,
-            Partial<Item> & { [key: string]: unknown }
-          ]) => ({
-            id,
-            ...item,
-          })
-        )
-        .filter(
-          (item) => item.maps && (item.maps as Record<string, boolean>)[11]
-        );
+        .map(([id, item]) => ({
+          id,
+          ...(item as Item & { maps?: Record<string, boolean> }),
+        }))
+        .filter((item) => item.maps?.[11]);
 
       const legendaryItemsList: Item[] = allItems.filter((item) => {
         return (
