@@ -104,8 +104,8 @@ export default function LoLRandomGenerator() {
 
       const allItems = Object.entries(itemsData.data)
         .map(([id, item]) => ({
-          id,
           ...(item as Item & { maps?: Record<string, boolean> }),
+          id,
         }))
         .filter((item) => item.maps?.[11]);
 
