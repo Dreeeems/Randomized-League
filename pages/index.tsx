@@ -97,31 +97,42 @@ export default function LoLRandomGenerator() {
         `https://ddragon.leagueoflegends.com/cdn/${latestVersion}/data/en_US/item.json`
       );
       const itemsData = await itemsResponse.json();
-      const allItems = Object.entries(itemsData.data)
-        .map(([id, item]: [string, any]) => ({
-          id,
-          ...item,
-        }))
-        .filter((item: any) => item.maps?.[11]);
 
-      const legendaryItemsList = allItems.filter((item: any) => {
+      const allItems = Object.entries(itemsData.data)
+        .map(
+          ([id, item]: [
+            string,
+            Partial<Item> & { [key: string]: unknown }
+          ]) => ({
+            id,
+            ...item,
+          })
+        )
+        .filter(
+          (item) => item.maps && (item.maps as Record<string, boolean>)[11]
+        );
+
+      const legendaryItemsList: Item[] = allItems.filter((item) => {
         return (
-          item.gold?.total >= 3000 &&
+          item.gold?.total &&
+          item.gold.total >= 3000 &&
           !item.consumed &&
           !item.tags?.includes("Trinket") &&
           !item.tags?.includes("Consumable") &&
           !item.tags?.includes("Boots") &&
+          item.depth &&
           item.depth >= 3
         );
-      });
+      }) as Item[];
 
-      const bootsList = allItems.filter((item: any) => {
+      const bootsList: Item[] = allItems.filter((item) => {
         return (
           item.tags?.includes("Boots") &&
-          item.gold?.total > 300 &&
+          item.gold?.total &&
+          item.gold.total > 300 &&
           !item.consumed
         );
-      });
+      }) as Item[];
 
       setLegendaryItems(legendaryItemsList);
       setBoots(bootsList);
