@@ -189,7 +189,7 @@ export default function LoLRandomGenerator() {
         ];
       selectedRunesList.push(keystone);
 
-      for (let i = 1; i < Math.min(3, primaryTree.slots.length); i++) {
+      for (let i = 1; i < Math.min(4, primaryTree.slots.length); i++) {
         const rune =
           primaryTree.slots[i].runes[
             Math.floor(Math.random() * primaryTree.slots[i].runes.length)
